@@ -10,52 +10,109 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { ChevronDownIcon, CheckCircleFillIcon } from "./icons";
 import { cn } from "@/lib/utils";
+import type { User, Conversation, FailedMessage } from "@/lib/types";
 
-type User = { id: string; email: string };
-type Conversation = { id: string; title: string };
+/*───────────────────────────
+  Props
+───────────────────────────*/
+interface Props {
+  onSelectUser: (userId: string) => void;
+  onSelectConversation: (conversationId: string) => void;
+  onFailedPartsLoaded?: (failed: FailedMessage[]) => void;
+  className?: string;
+}
 
+/*───────────────────────────
+  Component
+───────────────────────────*/
 export function UserConversationSelector({
   onSelectUser,
   onSelectConversation,
+  onFailedPartsLoaded,
   className,
-}: {
-  onSelectUser: (userId: string) => void;
-  onSelectConversation: (conversationId: string) => void;
-  className?: string;
-}) {
+}: Props) {
+  /* State */
   const [users, setUsers] = useState<User[]>([]);
   const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [failedParts, setFailedParts] = useState<FailedMessage[]>([]);
+
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedConversationId, setSelectedConversationId] = useState<
     string | null
   >(null);
 
-  const selectedUser = users.find((u) => u.id === selectedUserId);
-  const selectedConversation = conversations.find(
-    (c) => c.id === selectedConversationId
-  );
+  const selectedUser = users.find((u) => u.id === selectedUserId) ?? null;
+  const selectedConversation =
+    conversations.find((c) => c.id === selectedConversationId) ?? null;
 
-  // Fetch users on mount
+  /* Fetch all users once */
   useEffect(() => {
     fetch("/api/users")
-      .then((res) => res.json())
-      .then((data) => setUsers(data))
-      .catch((err) => console.error("Failed to fetch users", err));
+      .then((r) => r.json())
+      .then(setUsers)
+      .catch((e) => console.error("Failed to fetch users", e));
   }, []);
 
-  // Fetch conversations when user changes
+  /* Fetch conversations when a user is chosen */
   useEffect(() => {
     if (!selectedUserId) return;
 
     fetch(`/api/users/${selectedUserId}/conversations`)
-      .then((res) => res.json())
-      .then((data) => setConversations(data))
-      .catch((err) => console.error("Failed to fetch conversations", err));
+      .then((r) => r.json())
+      .then(setConversations)
+      .catch((e) => console.error("Failed to fetch conversations", e));
   }, [selectedUserId]);
 
+  /* Fetch failed messages when a conversation is chosen */
+  useEffect(() => {
+    if (!selectedConversationId) {
+      setFailedParts([]);
+      return;
+    }
+
+    fetch(
+      `/api/messages?conversationId=${encodeURIComponent(
+        selectedConversationId
+      )}`
+    )
+      .then((r) => r.json())
+      .then((data: FailedMessage[]) => {
+        setFailedParts(data);
+        onFailedPartsLoaded?.(data);
+      })
+      .catch((e) => console.error("Failed to fetch failed parts", e));
+  }, [selectedConversationId, onFailedPartsLoaded]);
+
+  /* Helper – chat-style bubble */
+  const renderFailedSummary = (m: FailedMessage) => {
+    const isUser = m.role === "user";
+
+    return (
+      <div
+        key={m.id}
+        className={cn("flex", isUser ? "justify-end" : "justify-start")}
+      >
+        <div
+          className={cn(
+            "max-w-[80%] rounded-lg p-3 text-sm shadow-md dark:shadow-none",
+            isUser
+              ? "bg-primary text-primary-foreground"
+              : "bg-muted text-muted-foreground dark:bg-neutral-800"
+          )}
+        >
+          <p className="whitespace-pre-wrap break-words">{m.message}</p>
+          <p className="mt-1 text-[10px] text-right opacity-60">
+            {new Date(m.createdAt).toLocaleString()}
+          </p>
+        </div>
+      </div>
+    );
+  };
+
+  /* UI */
   return (
     <div className={cn("space-y-4", className)}>
-      {/* User Dropdown */}
+      {/* USER DROPDOWN */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium">Select User:</label>
         <DropdownMenu>
@@ -65,25 +122,28 @@ export function UserConversationSelector({
               <ChevronDownIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full max-h-60 overflow-y-auto">
-            {users.map((user) => (
+
+          <DropdownMenuContent className="max-h-60 w-full overflow-y-auto">
+            {users.map((u) => (
               <DropdownMenuItem
-                key={user.id}
+                key={u.id}
                 onSelect={() => {
-                  setSelectedUserId(user.id);
+                  setSelectedUserId(u.id);
                   setSelectedConversationId(null);
-                  onSelectUser(user.id);
+                  setFailedParts([]);
+                  setConversations([]);
+                  onSelectUser(u.id);
                 }}
               >
-                {user.email}
-                {selectedUserId === user.id && <CheckCircleFillIcon />}
+                {u.email}
+                {selectedUserId === u.id && <CheckCircleFillIcon />}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
 
-      {/* Conversation Dropdown */}
+      {/* CONVERSATION DROPDOWN */}
       <div className="flex flex-col gap-1">
         <label className="text-sm font-medium">Select Conversation:</label>
         <DropdownMenu>
@@ -97,22 +157,40 @@ export function UserConversationSelector({
               <ChevronDownIcon />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent className="w-full max-h-60 overflow-y-auto">
-            {conversations.map((conv) => (
+
+          <DropdownMenuContent className="max-h-60 w-full overflow-y-auto">
+            {conversations.map((c) => (
               <DropdownMenuItem
-                key={conv.id}
+                key={c.id}
                 onSelect={() => {
-                  setSelectedConversationId(conv.id);
-                  onSelectConversation(conv.id);
+                  setSelectedConversationId(c.id);
+                  onSelectConversation(c.id);
                 }}
               >
-                {conv.title}
-                {selectedConversationId === conv.id && <CheckCircleFillIcon />}
+                {c.title}
+                {selectedConversationId === c.id && <CheckCircleFillIcon />}
               </DropdownMenuItem>
             ))}
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      {/* FAILED PARTS LIST */}
+      {selectedConversationId && (
+        <div className="space-y-2">
+          <h3 className="text-sm font-semibold">
+            Failed messages ({failedParts.length})
+          </h3>
+
+          {failedParts.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
+              No failures in this conversation&nbsp;🎉
+            </p>
+          ) : (
+            failedParts.map(renderFailedSummary)
+          )}
+        </div>
+      )}
     </div>
   );
 }

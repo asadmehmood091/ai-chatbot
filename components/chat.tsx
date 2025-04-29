@@ -17,6 +17,7 @@ import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { Session } from "next-auth";
 import { useSearchParams } from "next/navigation";
+import { ChatViewer } from "./ChatViewer";
 
 export function Chat({
   id,

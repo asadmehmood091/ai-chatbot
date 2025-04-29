@@ -31,25 +31,41 @@ export function ChatViewer({ chatId, userId }: ChatViewerProps) {
     Record<string, { chat: Chat; messages: Message[] }>
   >({});
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   console.log("🧩 ChatViewer props:", { chatId, userId });
 
   useEffect(() => {
     async function fetchMessages() {
-      if (!chatId && !userId) return;
+      if (!chatId && !userId) {
+        console.log("No chatId or userId provided, skipping fetch.");
+        return;
+      }
 
       setLoading(true);
+      setError(null);
 
       try {
         if (chatId) {
+          console.log(`Fetching messages for chatId: ${chatId}`);
           const res = await fetch(`/api/chats/${chatId}/messages`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch messages: ${res.statusText}`);
+          }
           const messages: Message[] = await res.json();
+          console.log(`Messages fetched for chatId ${chatId}:`, messages);
+
           setMessagesByChat({
             [chatId]: { chat: { id: chatId, title: "Conversation" }, messages },
           });
         } else if (userId) {
+          console.log(`Fetching conversations for userId: ${userId}`);
           const res = await fetch(`/api/users/${userId}/conversations`);
+          if (!res.ok) {
+            throw new Error(`Failed to fetch conversations: ${res.statusText}`);
+          }
           const chats: Chat[] = await res.json();
+          console.log(`Chats fetched for userId ${userId}:`, chats);
 
           const chatMessages: Record<
             string,
@@ -57,8 +73,15 @@ export function ChatViewer({ chatId, userId }: ChatViewerProps) {
           > = {};
 
           for (const chat of chats) {
+            console.log(`Fetching messages for chatId: ${chat.id}`);
             const res = await fetch(`/api/chats/${chat.id}/messages`);
+            if (!res.ok) {
+              throw new Error(
+                `Failed to fetch messages for chat ${chat.id}: ${res.statusText}`
+              );
+            }
             const messages: Message[] = await res.json();
+            console.log(`Messages for chatId ${chat.id}:`, messages);
             chatMessages[chat.id] = { chat, messages };
           }
 
@@ -66,6 +89,7 @@ export function ChatViewer({ chatId, userId }: ChatViewerProps) {
         }
       } catch (error) {
         console.error("❌ Failed to fetch conversations:", error);
+        setError("Failed to load conversations. Please try again.");
       } finally {
         setLoading(false);
       }
@@ -82,6 +106,18 @@ export function ChatViewer({ chatId, userId }: ChatViewerProps) {
 
   if (loading) {
     return <p>Loading conversations...</p>;
+  }
+
+  if (error) {
+    return <p className="text-sm text-red-500">{error}</p>;
+  }
+
+  if (Object.keys(messagesByChat).length === 0) {
+    return (
+      <p className="text-sm text-muted-foreground">
+        No conversations available.
+      </p>
+    );
   }
 
   return (

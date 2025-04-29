@@ -1,3 +1,4 @@
+/* eslint-disable import/no-unresolved */
 import { cookies } from "next/headers";
 
 import { Chat } from "@/components/chat";
