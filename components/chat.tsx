@@ -1,22 +1,22 @@
-'use client';
+"use client";
 
-import type { Attachment, UIMessage } from 'ai';
-import { useChat } from '@ai-sdk/react';
-import { useEffect, useState } from 'react';
-import useSWR, { useSWRConfig } from 'swr';
-import { ChatHeader } from '@/components/chat-header';
-import type { Vote } from '@/lib/db/schema';
-import { fetcher, generateUUID } from '@/lib/utils';
-import { Artifact } from './artifact';
-import { MultimodalInput } from './multimodal-input';
-import { Messages } from './messages';
-import type { VisibilityType } from './visibility-selector';
-import { useArtifactSelector } from '@/hooks/use-artifact';
-import { unstable_serialize } from 'swr/infinite';
-import { getChatHistoryPaginationKey } from './sidebar-history';
-import { toast } from './toast';
-import type { Session } from 'next-auth';
-import { useSearchParams } from 'next/navigation';
+import type { Attachment, UIMessage } from "ai";
+import { useChat } from "@ai-sdk/react";
+import { useEffect, useState } from "react";
+import useSWR, { useSWRConfig } from "swr";
+import { ChatHeader } from "@/components/chat-header";
+import type { Vote } from "@/lib/db/schema";
+import { fetcher, generateUUID } from "@/lib/utils";
+import { Artifact } from "./artifact";
+import { MultimodalInput } from "./multimodal-input";
+import { Messages } from "./messages";
+import type { VisibilityType } from "./visibility-selector";
+import { useArtifactSelector } from "@/hooks/use-artifact";
+import { unstable_serialize } from "swr/infinite";
+import { getChatHistoryPaginationKey } from "./sidebar-history";
+import { toast } from "./toast";
+import type { Session } from "next-auth";
+import { useSearchParams } from "next/navigation";
 
 export function Chat({
   id,
@@ -25,6 +25,8 @@ export function Chat({
   selectedVisibilityType,
   isReadonly,
   session,
+  selectedUserId, // ✅ Added
+  selectedConversationId, // ✅ Added
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -32,6 +34,8 @@ export function Chat({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   session: Session;
+  selectedUserId?: string | null; // ✅ Added
+  selectedConversationId?: string | null; // ✅ Added
 }) {
   const { mutate } = useSWRConfig();
 
@@ -61,32 +65,32 @@ export function Chat({
     },
     onError: (error) => {
       toast({
-        type: 'error',
+        type: "error",
         description: error.message,
       });
     },
   });
 
   const searchParams = useSearchParams();
-  const query = searchParams.get('query');
+  const query = searchParams.get("query");
 
   const [hasAppendedQuery, setHasAppendedQuery] = useState(false);
 
   useEffect(() => {
     if (query && !hasAppendedQuery) {
       append({
-        role: 'user',
+        role: "user",
         content: query,
       });
 
       setHasAppendedQuery(true);
-      window.history.replaceState({}, '', `/chat/${id}`);
+      window.history.replaceState({}, "", `/chat/${id}`);
     }
   }, [query, append, hasAppendedQuery, id]);
 
   const { data: votes } = useSWR<Array<Vote>>(
     messages.length >= 2 ? `/api/vote?chatId=${id}` : null,
-    fetcher,
+    fetcher
   );
 
   const [attachments, setAttachments] = useState<Array<Attachment>>([]);
@@ -101,10 +105,16 @@ export function Chat({
           selectedVisibilityType={selectedVisibilityType}
           isReadonly={isReadonly}
           session={session}
+          selectedTopic={""}
+          onTopicChange={function (topic: string): void {
+            throw new Error("Function not implemented.");
+          }}
         />
 
         <Messages
-          chatId={id}
+          chatId={selectedConversationId || id} // ✅ dynamic selected chat
+          selectedUserId={selectedUserId || null} // ✅ dynamic selected user
+          selectedConversationId={selectedConversationId || null} // ✅ dynamic selected conversation
           status={status}
           votes={votes}
           messages={messages}
