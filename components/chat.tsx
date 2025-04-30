@@ -17,7 +17,6 @@ import { getChatHistoryPaginationKey } from "./sidebar-history";
 import { toast } from "./toast";
 import type { Session } from "next-auth";
 import { useSearchParams } from "next/navigation";
-import { ChatViewer } from "./ChatViewer";
 
 export function Chat({
   id,
@@ -26,8 +25,6 @@ export function Chat({
   selectedVisibilityType,
   isReadonly,
   session,
-  selectedUserId, // ✅ Added
-  selectedConversationId, // ✅ Added
 }: {
   id: string;
   initialMessages: Array<UIMessage>;
@@ -35,8 +32,6 @@ export function Chat({
   selectedVisibilityType: VisibilityType;
   isReadonly: boolean;
   session: Session;
-  selectedUserId?: string | null; // ✅ Added
-  selectedConversationId?: string | null; // ✅ Added
 }) {
   const { mutate } = useSWRConfig();
 
@@ -113,9 +108,7 @@ export function Chat({
         />
 
         <Messages
-          chatId={selectedConversationId || id} // ✅ dynamic selected chat
-          selectedUserId={selectedUserId || null} // ✅ dynamic selected user
-          selectedConversationId={selectedConversationId || null} // ✅ dynamic selected conversation
+          chatId={id}
           status={status}
           votes={votes}
           messages={messages}
