@@ -17,6 +17,40 @@ export const BotIcon = () => {
   );
 };
 
+export const BookIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      width={size}
+      viewBox="0 0 16 16"
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fill="currentColor"
+        d="M2 2C2 1.44772 2.44772 1 3 1H13C13.5523 1 14 1.44772 14 2V13C14 13.5523 13.5523 14 13 14H3C2.44772 14 2 13.5523 2 13V2ZM3.5 2V12.5H13V2H3.5ZM5 4H11V5H5V4ZM5 6H11V7H5V6Z"
+      />
+    </svg>
+  );
+};
+
+export const SparkleIcon = ({ size = 16 }: { size?: number }) => {
+  return (
+    <svg
+      height={size}
+      width={size}
+      viewBox="0 0 16 16"
+      style={{ color: 'currentcolor' }}
+    >
+      <path
+        fill="currentColor"
+        d="M8 0L8.5 3H11L8.75 4.5L9.5 7.5L8 6L6.5 7.5L7.25 4.5L5 3H7.5L8 0ZM1 8L1.5 10H3L1.75 11L2.5 13.5L1 12L-0.5 13.5L0.25 11L-1 10H1.5L1 8ZM15 8L15.5 10H17L15.75 11L16.5 13.5L15 12L13.5 13.5L14.25 11L13 10H15.5L15 8Z"
+      />
+    </svg>
+  );
+};
+
+
+
 export const UserIcon = () => {
   return (
     <svg

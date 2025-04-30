@@ -112,6 +112,16 @@ export async function deleteChatById({ id }: { id: string }) {
   }
 }
 
+export async function getAllUsers(): Promise<Array<User>> {
+  try {
+    return await db.select().from(user);
+  } catch (error) {
+    console.error('Failed to get all users from database');
+    throw error;
+  }
+}
+
+
 export async function getChatsByUserId({
   id,
   limit,
@@ -470,3 +480,5 @@ export async function getMessageCountByUserId({
     throw error;
   }
 }
+
+
